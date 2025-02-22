@@ -1,0 +1,41 @@
+1. User Roles & Their Authentication Process
+The system categorizes users into three roles based on their User ID structure:
+
+Role	ID Length	Privileges
+Admin	5 digits	Can create Librarians and Members
+Librarian	6 digits	Can create Members
+Member	8 digits	Regular library access
+2. Authentication Process
+A. Logging In
+Users enter their ID and Password.
+The system checks the users.txt file for stored credentials.
+If the ID exists:
+If the password is correct, login is successful.
+If the password is incorrect, the user gets 3 attempts before the system exits.
+If the ID does not exist, a new user creation process starts.
+B. Librarian Authentication
+Since only Admins can create Librarians, the system follows these steps:
+
+If a librarian's ID does not exist, it prompts for a secret pin before creating one.
+If the entered pin is correct, a new librarian is registered.
+If the wrong pin is entered, access is denied.
+If the librarian ID exists but the password is wrong, the user gets 3 attempts to enter the correct password.
+
+C. Member Authentication
+Admins and Librarians can create new Member accounts.
+The system generates a unique 8-digit ID for members.
+Credentials are stored securely in users.txt.
+3. File-Based Storage for Persistence
+The system ensures user data is not lost when the program exits by storing:
+
+User Credentials (users.txt): Stores ID, Name, Role, Password.
+Last Used ID (last_id.txt): Keeps track of the last assigned ID to prevent duplicate user IDs.
+This ensures data persistence even after the program is closed and reopened.
+
+4. Security Features
+Secure Password Input: Uses _getch() to mask passwords during input.
+Limited Login Attempts: Users get only 3 chances to enter correct credentials.
+Role-Based Access: Ensures that only authorized users can create Librarians and Members.
+Persistent User Data: Credentials are saved in files, preventing unauthorized ID reuse.
+Conclusion
+This LMS authentication system ensures data security, controlled user access, and role-based functionalities while preventing unauthorized user creation. 🚀
