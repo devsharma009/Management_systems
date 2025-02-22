@@ -1,0 +1,288 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cmath>
+#include <vector>
+#include <conio.h> // For secure password input
+
+using namespace std;
+
+// Function to get the last used ID from a file
+int getLastID()
+{
+    ifstream file("last_id.txt");
+    int lastID = 12025000; // Default starting ID if file does not exist
+    if (file.is_open())
+    {
+        file >> lastID;
+        file.close();
+    }
+    return lastID;
+}
+
+// Function to update the last used ID in a file
+void updateLastID(int newID)
+{
+    ofstream file("last_id.txt");
+    if (file.is_open())
+    {
+        file << newID;
+        file.close();
+    }
+}
+
+class Authenticate
+{
+protected:
+    int id;
+    string password;
+
+public:
+    Authenticate(int id = 0, string password = "")
+    {
+        this->id = id;
+        this->password = password;
+    }
+
+    bool is_Valid_user(int id, string pass)
+    {
+        return (this->password == pass && this->id == id);
+    }
+
+    int countDigits(int num)
+    {
+        return (num == 0) ? 1 : log10(abs(num)) + 1;
+    }
+
+    int role(int id, string pass)
+    {
+        if (is_Valid_user(id, pass))
+        {
+            int digitCount = countDigits(id);
+            if (digitCount == 5)
+                return 1; // Admin
+            else if (digitCount == 6)
+                return 2; // Librarian
+            else if (digitCount == 8)
+                return 3; // Member
+        }
+        return 0; // Invalid role
+    }
+};
+
+class Member : public Authenticate
+{
+    string name;
+    int roleType;
+
+public:
+    Member(int id = 0, string name = "", int role = 0, string pass = "") : Authenticate(id, pass)
+    {
+        this->name = name;
+        this->roleType = role;
+    }
+
+    int GetRole()
+    {
+        return roleType;
+    }
+
+    int GetID()
+    {
+        return id;
+    }
+
+    string GetName()
+    {
+        return name;
+    }
+
+    // Function to save user to file
+    void saveToFile()
+    {
+        ofstream file("users.txt", ios::app); // Open file in append mode
+        if (file.is_open())
+        {
+            file << id << "," << name << "," << roleType << "," << password << endl;
+            file.close();
+        }
+        else
+        {
+            cout << "Error opening file for writing.\n";
+        }
+    }
+};
+
+class Admin : public Authenticate
+{
+public:
+    void create_Member(int pin)
+    {
+        int count = 2;
+        do
+        {
+            if (pin == 12062004)
+            {
+                string name;
+                cout << "Please Enter Your Name: ";
+                cin.ignore();
+                getline(cin, name);
+
+                cout << "Enter Password: ";
+                string pass = GetPassword();
+
+                int newID = getLastID() + 1; // Get last used ID and increment
+                updateLastID(newID);         // Save the new ID to file
+
+                Member temp(newID, name, 3, pass);
+                temp.saveToFile(); // Save member to file
+                cout << "Member Created Successfully! Your ID: " << newID << endl;
+                break;
+            }
+            else
+            {
+                cout << "Wrong Pin! " << count << " chances remaining.\n";
+                count--;
+                if (count > 0)
+                {
+                    cout << "Enter Again: ";
+                    cin >> pin;
+                }
+                else
+                {
+                    cout << "Too many failed attempts. Exiting...\n";
+                }
+            }
+        } while (count > 0);
+    }
+
+    string GetPassword()
+    {
+        string pass;
+        char ch;
+        while ((ch = _getch()) != '\r')
+        { // Read until Enter key is pressed
+            if (ch == '\b')
+            { // Handle backspace
+                if (!pass.empty())
+                {
+                    pass.pop_back();
+                    cout << "\b \b";
+                }
+            }
+            else
+            {
+                pass.push_back(ch);
+                cout << "*"; // Masking password
+            }
+        }
+        cout << endl;
+        return pass;
+    }
+} A1;
+
+// Function to read user data from file and authenticate
+bool authenticateUser(int id, string pass, int &userRole)
+{
+    ifstream file("users.txt");
+    if (!file)
+    {
+        cout << "Error opening user database.\n";
+        return false;
+    }
+
+    int fileID, fileRole;
+    string fileName, filePass;
+
+    while (file >> fileID)
+    {
+        file.ignore(); // Ignore comma
+        getline(file, fileName, ',');
+        file >> fileRole;
+        file.ignore(); // Ignore comma
+        getline(file, filePass);
+
+        if (fileID == id && filePass == pass)
+        {
+            userRole = fileRole;
+            file.close();
+            return true;
+        }
+    }
+
+    file.close();
+    return false;
+}
+int main()
+{
+    cout << "Welcome to Library Management System\n";
+    cout << "----------------------------------------------\n";
+    cout << "# For Sign Up, Press 1\n";
+    cout << "# For Login, Press 2\n";
+
+    int choice;
+    cin >> choice;
+
+    if (choice == 1)
+    {
+        cout << "Please Enter Secret Pin: ";
+        int pin;
+        cin >> pin;
+        A1.create_Member(pin);
+    }
+
+    // Login Process
+    int LoginCount = 3; // Allow 3 attempts
+    int id;
+    string pass;
+    int userRole = 0;
+    bool loggedIn = false; // Track successful login
+
+    do
+    {
+        cout << "Enter Your ID: ";
+        cin >> id;
+        cout << "Enter Your Password: ";
+        pass = A1.GetPassword();
+
+        if (authenticateUser(id, pass, userRole))
+        {
+            loggedIn = true;
+            break; // Exit loop if login is successful
+        }
+        else
+        {
+            LoginCount--;
+            if (LoginCount > 0)
+                cout << "Invalid credentials! Try Again. " << LoginCount << " Chances Left" << endl;
+        }
+
+    } while (LoginCount > 0);
+
+    if (!loggedIn)
+    {
+        cout << "Invalid credentials! Exiting LMS.\n";
+        return 0; // Exit program if login fails
+    }
+
+    // Role-Based Functionality
+    switch (userRole)
+    {
+    case 1:
+        cout << "Welcome Admin!\n";
+        // Call admin-specific functions
+        break;
+    case 2:
+        cout << "Welcome Librarian!\n";
+        // Call librarian-specific functions
+        break;
+    case 3:
+        cout << "Welcome Member!\n";
+        // Call member-specific functions
+        break;
+    default:
+        cout << "Invalid role assigned!\n";
+    }
+
+    return 0;
+}
